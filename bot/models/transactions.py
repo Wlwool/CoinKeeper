@@ -17,4 +17,4 @@ class Transactions(Base):
     user_id = Column(Integer, ForeignKey('users.id'))
     price = Column(Float, nullable=False)
 
-    user = relationship('Users', back_populates='transactions')
+    user = relationship('User', back_populates='transactions')
