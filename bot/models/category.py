@@ -10,6 +10,7 @@ class Category(Base):
     __tablename__ = 'category'
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100))
-    user_id = Column(Integer, ForeignKey('user.id'))
-    user = relationship("User", back_populates="categories")
+    user_id = Column(Integer, ForeignKey('users.id'))
+
+    user = relationship("User", back_populates="category")
 
