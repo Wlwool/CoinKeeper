@@ -1,8 +1,11 @@
-from aiogram import Dispatcher
-from bot.handlers.basic_commands import register_handlers_basic_commands
+from aiogram import Router
+from .basic_commands import router as basic_router
+from .transactions import router as transactions_router
+
+main_router = Router()
+
+main_router.include_router(basic_router)
+main_router.include_router(transactions_router)
 
 
-def register_all_handlers(dp: Dispatcher):
-    """Регистрирует все обработчики бота."""
-    register_handlers_basic_commands(dp)
-
+__all__ = ["main_router"]
