@@ -25,21 +25,22 @@ class TelegramBot:
         self.bot = Bot(token=self.config.BOT_TOKEN)
         self.storage = RedisStorage(redis=self.redis)
         self.dp = Dispatcher(storage=self.storage)
+        self.__register_routers()
         self.logger.info("Инициализация бота...")
+
+    def __register_routers(self):
+        from bot.handlers import main_router as handlers_router
+        self.dp.include_router(handlers_router)
 
     async def setup_db(self):
         """Настройка подключения к базе данных"""
+        from bot.models import User, Category, Transactions
         await setup_db()
-        self.logger.info("Database connection successful.")
+        self.logger.info("База данных настроена!")
 
-
-    def register_handlers(self):
-        from bot.handlers import register_all_handlers
-        register_all_handlers(self.dp)
 
     async def run(self):
         """Запуск бота"""
         await self.setup_db()
-        self.register_handlers()
         self.logger.info("Запуск бота...")
         await self.dp.start_polling(self.bot)
