@@ -1,7 +1,8 @@
+from bot.database.base import Base
 from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from bot.database.database import Base
+
 
 
 class User(Base):
@@ -18,6 +19,9 @@ class User(Base):
     balance = Column(Float, nullable=False, default=0.0)
     is_active = Column(Boolean, default=True)
     registered_at = Column(DateTime, server_default=func.now())
+
+    categories = relationship("Category", back_populates="user")
+    transactions = relationship("Transactions", back_populates="user")
 
     def __repr__(self):
         return f"<User(id={self.id}, user_id={self.user_tg_id}, username={self.username})>"
