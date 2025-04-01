@@ -1,17 +1,14 @@
 import logging
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.ext.declarative import declarative_base
 from bot.config.config import Config
-# from bot.models.user import User
-# from bot.models.category import Category
-# from bot.models.transactions import Transactions
+from bot.database.base import Base
 
 
 logger = logging.getLogger(__name__)
 config = Config()
 
-Base = declarative_base() # базовый класс для создания моделей данных
 
 # создаем асинхронный движок для взаимодействия с базой данных
 engine = create_async_engine(config.DB_URL,
@@ -26,16 +23,41 @@ async_session = sessionmaker(engine,
 
 async def setup_db():
     """Инициализация и создание таблиц в базе данных."""
+    # Локальные импорты моделей для избежания циклических зависимостей
+    from bot.models.user import User
+    from bot.models.category import Category
+    from bot.models.transactions import Transactions
+
     try:
         async with engine.begin() as conn:
-            logger.info("Создание таблиц в базе данных...")
-            await conn.run_sync(Base.metadata.drop_all)   # УБРАТЬ ПОТОМ!!!
-            await conn.run_sync(Base.metadata.create_all)
-            logger.info("Таблицы успешно созданы.")
-    except Exception as e:
-        logger.error(f"Ошибка при создании таблиц: {e}")
+            logger.info("Создание таблиц...")
 
-    logger.info("Подключение к базе данных завершено.")
+            if 'sqlite' in config.DB_URL:
+                await conn.execute(text("PRAGMA foreign_keys=OFF"))
+
+            # Сначала создаём таблицы без зависимостей
+            await conn.run_sync(Base.metadata.create_all, tables=[
+                User.__table__
+            ])
+
+            # Затем зависимые таблицы
+            await conn.run_sync(Base.metadata.create_all, tables=[
+                Category.__table__,
+                Transactions.__table__
+            ])
+
+            if 'sqlite' in config.DB_URL:
+                await conn.execute(text("PRAGMA foreign_keys=ON"))
+
+            logger.info("Таблицы созданы успешно")
+
+    except Exception as e:
+        logger.error(f"Ошибка: {e}")
+        raise
+
+    except Exception as e:
+        logger.error(f"Критическая ошибка при создании таблиц: {e}")
+        raise
 
 async def get_session() -> AsyncSession:
     """Генератор асинхронных сессий для работы с базой данных."""
