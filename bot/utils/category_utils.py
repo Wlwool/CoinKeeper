@@ -7,6 +7,7 @@ from bot.models.category import Category
 async def get_user_categories(user_id: int, category_type: str) -> list[str]:
     """
     Возвращает категории пользователя по типу (income/expense)
+    returns: list[str]
     """
     async with get_session() as session:
         result = await session.execute(
