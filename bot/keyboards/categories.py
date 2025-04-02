@@ -1,8 +1,9 @@
-from aiogram.utils.keyboard import InlineKeyboardBuilder
+from aiogram.utils.keyboard import ReplyKeyboardBuilder
 
-def categories_keyboard(categories: list[str]) -> InlineKeyboardBuilder:
-    builder = InlineKeyboardBuilder()
+def categories_keyboard(categories: list[str]):
+    builder = ReplyKeyboardBuilder()
     for category in categories:
-        builder.button(text=category, callback_data=f"category_{category}")
+        builder.button(text=category)
+    builder.button(text="Отменить")
     builder.adjust(2)
-    return builder.as_markup()
+    return builder.as_markup(resize_keyboard=True)
