@@ -2,13 +2,17 @@ from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, ReplyKeyboardRemove
 from aiogram.filters import StateFilter, Command
-from datetime import datetime
+from datetime import datetime, timezone
 
 from bot.states.transactions import AddIncomeStates, AddExpenseStates
+from bot.keyboards.main_menu import main_menu_keyboard
 from bot.keyboards.cancel import cancel_keyboard
 from bot.keyboards.categories import categories_keyboard
 from bot.models.transactions import Transactions
+from bot.models.user import User
 from bot.database.database import get_session
+from bot.utils.category_utils import get_user_categories
+import logging
 
 
 router = Router()
@@ -19,53 +23,72 @@ router = Router()
 async def start_add_income(message: Message, state: FSMContext):
     await message.answer(
         "Введите сумму дохода",
-        reply_markup=cancel_keyboard(),
+        reply_markup=cancel_keyboard()
     )
     await state.set_state(AddIncomeStates.amount)
 
 
 @router.message(AddIncomeStates.amount)
 async def process_income_amount(message: Message, state: FSMContext):
+    """Обработка введенной пользователем суммы дохода.
+
+    Проверяет корректность введенной суммы (должна быть положительным числом),
+    сохраняет ее в состоянии и переходит к выбору категории дохода.
+
+    Args:
+        message (Message): Сообщение пользователя с суммой дохода
+        state (FSMContext): Контекст состояния пользователя
+    """
     try:
         amount = float(message.text)
         if amount <= 0:
             raise ValueError
 
         await state.update_data(amount=amount)
-        await message.answer("Укажите категорию: ",
-                             reply_markup=categories_keyboard(["Зарплата", "Инвестиции", "Подарки", "Другое"])
-                             )
-
+        categories = await get_user_categories(message.from_user.id, "income")
+        await message.answer(
+            "Выберите категорию:",
+            reply_markup=categories_keyboard(categories)
+        )
         await state.set_state(AddIncomeStates.category)
     except ValueError:
-        await message.answer(
-            "Неверный формат суммы. Пожалуйста, введите сумму снова. Число должно быть больше 0"
-        )
+        await message.answer("Неверный формат суммы. Число должно быть больше 0")
 
 
 @router.message(AddIncomeStates.category)
 async def process_income_category(message: Message, state: FSMContext):
-    category = message.text
-    data = await state.get_data()
+    try:
+        category = message.text
+        data = await state.get_data()
+        # Проверка категории
+        valid_categories = await get_user_categories(message.from_user.id, "income")
+        if category not in valid_categories:
+            await message.answer("Выберите категорию из списка!")
+            return
 
-    # Сохранение дохода в базе данных
-    async with get_session() as session:
-        transaction = Transactions(
-            amount=data["amount"],
-            type="income",
-            category=category,
-            user_id=message.from_user.id,
-            date=datetime.now(),
-            price=data["amount"]
+        # Сохранение
+        async with get_session() as session:
+            # Создаем транзакцию
+            transaction = Transactions(
+                user_id=message.from_user.id,
+                amount=data['amount'],
+                category=category,
+                type="income",
+                date=datetime.now(timezone.utc),
+                price=data['amount']
+            )
+            session.add(transaction)
+            await session.commit()
+        # Показываем сообщение об успехе и возвращаем главное меню
+        await message.answer(
+            f"✅ Доход {data['amount']} руб. сохранён!",
+            reply_markup=main_menu_keyboard()
         )
-    session.add(transaction)
-    await session.commit()
-
-    await message.answer(
-        f"✅ Доход {data['amount']} руб. по категории '{category}' сохранён!",
-        reply_markup=ReplyKeyboardRemove()
-    )
-    await state.clear()
+    except Exception as e:
+        logging.error(f"Ошибка сохранения: {e}")
+        await message.answer("⚠️ Ошибка при сохранении дохода!", reply_markup=main_menu_keyboard())
+    finally:
+        await state.clear()
 
 # == РАСХОДЫ
 
@@ -89,44 +112,51 @@ async def process_expense_amount(message: Message, state: FSMContext):
 
         await state.update_data(amount=amount)
 
-        expense_categories = ["Еда", "Транспорт", "Жильё", "Развлечения"]
-
+        categories = await get_user_categories(message.from_user.id, "expense")
         await message.answer(
-            "Укажите категорию расхода:",
-            reply_markup=categories_keyboard(expense_categories)
+            "Выберите категорию:",
+            reply_markup=categories_keyboard(categories)
         )
         await state.set_state(AddExpenseStates.category)
     except ValueError:
-        await message.answer("Неверный формат суммы. Пожалуйста, введите сумму снова. Число должно быть больше 0")
+        await message.answer("Неверный формат суммы. Число должно быть больше 0")
 
 @router.message(AddExpenseStates.category)
 async def process_expense_category(message: Message, state: FSMContext):
     """Обработка категории расхода и сохранение в БД"""
-    category = message.text
-    data = await state.get_data()
+    try:
+        category = message.text
+        data = await state.get_data()
 
-    # Валидация категории
-    if len(category) > 50:
-        await message.answer("Название категории не должно превышать 50 символов!")
-        return
+        # Проверка категории
+        valid_categories = await get_user_categories(message.from_user.id, "expense")
+        if category not in valid_categories:
+            await message.answer("Выберите категорию из списка!")
+            return
 
-    async with get_session() as session:
-        transaction = Transactions(
-            amount=data["amount"],
-            type="expense",
-            category=category,
-            user_id=message.from_user.id,
-            date=datetime.now(),
-            price=data["amount"]
+        # Сохранение
+        async with get_session() as session:
+            transaction = Transactions(
+                user_id=message.from_user.id,
+                amount=data['amount'],
+                category=category,
+                type="expense",
+                date=datetime.now(timezone.utc),
+                price=data['amount']
+            )
+            session.add(transaction)
+            await session.commit()
+
+        await message.answer(
+            f"✅ Расход {data['amount']} руб. сохранён!",
+            reply_markup=main_menu_keyboard()
         )
-        session.add(transaction)
-        await session.commit()
 
-    await message.answer(
-        f"✅ Расход {data['amount']} руб. по категории '{category}' сохранён!",
-        reply_markup=ReplyKeyboardRemove()
-    )
-    await state.clear()
+    except Exception as e:
+        logging.error(f"Ошибка сохранения: {e}")
+        await message.answer("⚠️ Ошибка при сохранении расхода!", reply_markup=main_menu_keyboard())
+    finally:
+        await state.clear()
 
 
 # == ОТМЕНА
@@ -139,6 +169,6 @@ async def cancel_handler(message: Message, state: FSMContext):
     await state.clear()
     await message.answer(
         "Действие отменено!",
-        reply_markup=ReplyKeyboardRemove()
+        reply_markup=main_menu_keyboard()
     )
 
