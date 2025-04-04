@@ -173,12 +173,3 @@ async def cancel_handler(message: Message, state: FSMContext):
         "Действие отменено!",
         reply_markup=main_menu_keyboard()
     )
-
-
-@router.message()  # Ловит ВСЁ, что не поймали другие хендлеры этого роутера
-async def unknown_message(message: Message):
-    logger.warning(f"Неизвестный ввод {message.from_user.id}: {message.text}")
-    await message.answer(
-        "Пожалуйста, используйте кнопки меню или команды\n",
-        reply_markup=main_menu_keyboard()
-    )
