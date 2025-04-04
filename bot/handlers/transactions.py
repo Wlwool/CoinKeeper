@@ -16,6 +16,8 @@ import logging
 
 
 router = Router()
+logger = logging.getLogger(__name__)
+
 
 # == ДОХОДЫ
 @router.message(F.text == "Добавить доход", StateFilter(None))
@@ -85,7 +87,7 @@ async def process_income_category(message: Message, state: FSMContext):
             reply_markup=main_menu_keyboard()
         )
     except Exception as e:
-        logging.error(f"Ошибка сохранения: {e}")
+        logger.error(f"Ошибка сохранения: {e}")
         await message.answer("⚠️ Ошибка при сохранении дохода!", reply_markup=main_menu_keyboard())
     finally:
         await state.clear()
@@ -153,7 +155,7 @@ async def process_expense_category(message: Message, state: FSMContext):
         )
 
     except Exception as e:
-        logging.error(f"Ошибка сохранения: {e}")
+        logger.error(f"Ошибка сохранения: {e}")
         await message.answer("⚠️ Ошибка при сохранении расхода!", reply_markup=main_menu_keyboard())
     finally:
         await state.clear()
@@ -172,3 +174,11 @@ async def cancel_handler(message: Message, state: FSMContext):
         reply_markup=main_menu_keyboard()
     )
 
+
+@router.message()  # Ловит ВСЁ, что не поймали другие хендлеры этого роутера
+async def unknown_message(message: Message):
+    logger.warning(f"Неизвестный ввод {message.from_user.id}: {message.text}")
+    await message.answer(
+        "Пожалуйста, используйте кнопки меню или команды\n",
+        reply_markup=main_menu_keyboard()
+    )
