@@ -10,7 +10,7 @@ from bot.models.user import User
 import logging
 
 router = Router()
-
+logger = logging.getLogger(__name__)
 
 @router.message(Command("start"))
 async def cmd_start(message: Message):
