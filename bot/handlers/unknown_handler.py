@@ -7,7 +7,7 @@ router = Router()
 logger = logging.getLogger(__name__)
 
 
-@router.message(F.text)
+@router.message(F.text, flags={"low_priority": True})
 async def unknown_message(message: Message) -> None:
     """
     Обработка всего что не попадает в другие обработчики
