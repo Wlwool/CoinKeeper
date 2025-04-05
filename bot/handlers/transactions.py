@@ -19,7 +19,8 @@ router = Router()
 logger = logging.getLogger(__name__)
 
 
-# == ДОХОДЫ
+# == ДОХОДЫ ==
+
 @router.message(F.text == "Добавить доход", StateFilter(None))
 @router.message(Command("add_income"), StateFilter(None))
 async def start_add_income(message: Message, state: FSMContext):
@@ -44,9 +45,11 @@ async def process_income_amount(message: Message, state: FSMContext):
     try:
         amount = float(message.text)
         if amount <= 0:
-            raise ValueError
+            await message.answer("Неверный формат суммы. Число должно быть больше 0.")
+            return
 
-        await state.update_data(amount=amount)
+        await state.update_data(amount=amount)  # Сохраняем сумму в состоянии
+
         categories = await get_user_categories(message.from_user.id, "income")
         await message.answer(
             "Выберите категорию:",
@@ -54,7 +57,7 @@ async def process_income_amount(message: Message, state: FSMContext):
         )
         await state.set_state(AddIncomeStates.category)
     except ValueError:
-        await message.answer("Неверный формат суммы. Число должно быть больше 0")
+        await message.answer("Неверный формат суммы. Введите число.")
 
 
 @router.message(AddIncomeStates.category)
@@ -92,7 +95,9 @@ async def process_income_category(message: Message, state: FSMContext):
     finally:
         await state.clear()
 
-# == РАСХОДЫ
+
+# ===================================РАСХОДЫ ===========================
+
 
 @router.message(F.text == "Добавить расход", StateFilter(None))
 @router.message(Command("add_expense"), StateFilter(None))
@@ -107,12 +112,14 @@ async def start_add_expense(message: Message, state: FSMContext):
 @router.message(AddExpenseStates.amount)
 async def process_expense_amount(message: Message, state: FSMContext):
     """Обработка суммы расхода"""
+    # проверка на корректность суммы
     try:
         amount = float(message.text)
         if amount <= 0:
-            raise ValueError
+            await message.answer("Неверный формат суммы. Число должно быть больше 0.")
+            return
 
-        await state.update_data(amount=amount)
+        await state.update_data(amount=amount)  # сохраняем сумму в состоянии
 
         categories = await get_user_categories(message.from_user.id, "expense")
         await message.answer(
@@ -121,7 +128,7 @@ async def process_expense_amount(message: Message, state: FSMContext):
         )
         await state.set_state(AddExpenseStates.category)
     except ValueError:
-        await message.answer("Неверный формат суммы. Число должно быть больше 0")
+        await message.answer("Неверный формат суммы. Введите число.")
 
 @router.message(AddExpenseStates.category)
 async def process_expense_category(message: Message, state: FSMContext):
@@ -159,17 +166,3 @@ async def process_expense_category(message: Message, state: FSMContext):
         await message.answer("⚠️ Ошибка при сохранении расхода!", reply_markup=main_menu_keyboard())
     finally:
         await state.clear()
-
-
-# == ОТМЕНА
-@router.message(F.text == "Отменить")
-async def cancel_handler(message: Message, state: FSMContext):
-    current_state = await state.get_state()
-    if current_state is None:
-        return
-
-    await state.clear()
-    await message.answer(
-        "Действие отменено!",
-        reply_markup=main_menu_keyboard()
-    )
