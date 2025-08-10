@@ -4,15 +4,13 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 
-
 class User(Base):
     """
     Модель пользователя Telegram.
     """
     __tablename__ = 'users'
 
-    id = Column(Integer, primary_key=True)
-    user_tg_id = Column(Integer, unique=True, nullable=False)
+    user_tg_id = Column(Integer, primary_key=True)
     username = Column(String(50))
     first_name = Column(String(50))
     last_name = Column(String(50))
@@ -20,8 +18,10 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     registered_at = Column(DateTime, server_default=func.now())
 
-    categories = relationship("Category", back_populates="user")
-    transactions = relationship("Transactions", back_populates="user")
+    categories = relationship("Category", back_populates="user",
+                              cascade="all, delete-orphan")
+    transactions = relationship("Transactions", back_populates="user",
+                                cascade="all, delete-orphan")
 
     def __repr__(self):
-        return f"<User(id={self.id}, user_id={self.user_tg_id}, username={self.username})>"
+        return f"<User(user_tg_id={self.user_tg_id}, username={self.username})>"
