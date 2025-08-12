@@ -6,7 +6,7 @@ import logging
 
 from bot.models.transactions import Transactions
 from bot.database.database import get_session
-from bot.keyboards.main_menu import main_menu_keyboard
+from bot.keyboards.main_menu import main_menu_keyboard, main_menu_inline_keyboard
 from bot.keyboards.delete_transactions import delete_transactions_keyboard, \
     confirm_delete_keyboard
 
@@ -148,5 +148,5 @@ async def cancel_delete(callback: CallbackQuery):
     await callback.message.edit_text("Удаление отменено.")
     await callback.message.answer(
         "Главное меню:",
-        reply_markup=main_menu_keyboard()
+        reply_markup=main_menu_inline_keyboard()
     )
