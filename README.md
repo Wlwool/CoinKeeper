@@ -74,22 +74,17 @@ Telegram-бот который помогает легко отслеживат�
    docker compose exec bot bash
    ```
 
-```markdown
-### Главное меню
-![Главное меню](https://github.com/Wlwool/CoinKeeper/blob/main/img/menu.png)
+| Главное меню | Добавление операции |
+|--------------|---------------------|
+| <img src="https://raw.githubusercontent.com/Wlwool/CoinKeeper/main/img/menu.png" width="300"> | <img src="https://raw.githubusercontent.com/Wlwool/CoinKeeper/main/img/start.png" width="300"> |
 
-### Добавление операции
-![Добавление операции](https://github.com/Wlwool/CoinKeeper/blob/main/img/start.png)
+| Статистика                                                                                    | История операций |
+|-----------------------------------------------------------------------------------------------|------------------|
+| <img src="https://raw.githubusercontent.com/Wlwool/CoinKeeper/main/img/stat.png" width="600"> | <img src="https://raw.githubusercontent.com/Wlwool/CoinKeeper/main/img/history.png" width="300"> |
 
-### Выбор периода
-![Выбор периода](https://github.com/Wlwool/CoinKeeper/blob/main/img/period.png)
-
-### История операций
-![История операций](https://github.com/Wlwool/CoinKeeper/blob/main/img/history.png)
-
-### Статистика по категориям
-![Статистика](https://github.com/Wlwool/CoinKeeper/blob/main/img/stat.png)
-```
+| Выбор периода                                                                                   |
+|-------------------------------------------------------------------------------------------------|
+| <img src="https://raw.githubusercontent.com/Wlwool/CoinKeeper/main/img/period.png" width="300"> |
 
 
 ## 📝 Лицензия
